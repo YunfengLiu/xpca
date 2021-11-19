@@ -66,13 +66,45 @@ ipca = function(X, W = NA, tol = 1e-6, max_iter_count = NA) {
   }
   V = cov(X);
   W = ogita_aishima(V, W, max_iter_count, tol);
-
+  
   means = as.vector(colMeans(X));
   X_centered = X - matrix(rep(means, T), ncol = length(means), byrow = TRUE);
-
-  P = X_centered %*% W;
+  
+  P = X %*% W;
   return(list(P = P, W = W));
 }
 
 
+
+if (!require("arrow")) {
+  install.packages("arrow");
+  library(arrow);
+}
+
+
+first_year = 2008; last_year = 2020;
+
+# read the equity_indices
+df = read_parquet('/Users/lyf/projects/MQF/STAT-970/jupyter/xpca/data/equity_indices.parquet')
+
+df = df[df$Datetime >= "2008-01-01" & df$Datetime <= "2020-12-31 23:59:59",];
+
+Z = prcomp(df[,1:9], retx = TRUE)
+
+Z_periods_ipca = c();
+W = NA;
+for (year in first_year:last_year) {
+  startTime = sprintf("%s-01-01", year);
+  endTime = sprintf("%s-12-31 23:59:59", year);
+  subdf = df[df$Datetime >= startTime & df$Datetime <= endTime,];
+  result = ipca(as.matrix(subdf[,1:9]), W);
+  Z_period = result$P;
+  Z_periods_ipca = rbind(Z_periods_ipca, Z_period);
+  W = result$W;
+}
+
+# par(mfrow=c(3,3))
+for (i in 1:9) {
+  plot(Z$x[, i], Z_periods_ipca[, i])
+}
 

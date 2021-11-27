@@ -60,7 +60,7 @@ ogita_aishima = function(A, W, max_iter_count = NA, tol = 1e-6, sort_by_eigenval
 ipca = function(X, W = NA, tol = 1e-6, max_iter_count = NA) {
   T = dim(X)[1];
   n = dim(X)[2];
-  if (is.na(W)) {
+  if (!is.matrix(W)) {
     pca = prcomp(X, retx = TRUE);
     W = as.matrix(pca$rotation);
   }
@@ -75,4 +75,6 @@ ipca = function(X, W = NA, tol = 1e-6, max_iter_count = NA) {
 }
 
 
-
+ewmcov = function(alpha, X) {
+    
+}

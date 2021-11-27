@@ -52,6 +52,7 @@ ogita_aishima = function(A, W, max_iter_count = NA, tol = 1e-6, sort_by_eigenval
     lmbda = estimate_eigenvalues(A, W, FALSE);
     indices_orders = order(lmbda, decreasing = TRUE);
     W = W[, indices_orders];
+    return(W);
   }
   return(W);
 }
@@ -60,9 +61,11 @@ ogita_aishima = function(A, W, max_iter_count = NA, tol = 1e-6, sort_by_eigenval
 ipca = function(X, W = NA, tol = 1e-6, max_iter_count = NA) {
   T = dim(X)[1];
   n = dim(X)[2];
-  if (is.na(W)) {
+  if (!is.matrix(W)) {
     pca = prcomp(X, retx = TRUE);
     W = as.matrix(pca$rotation);
+  } else {
+    W = as.matrix(W);
   }
   V = cov(X);
   W = ogita_aishima(V, W, max_iter_count, tol);
@@ -74,5 +77,62 @@ ipca = function(X, W = NA, tol = 1e-6, max_iter_count = NA) {
   return(list(P = P, W = W));
 }
 
+# alpha: scaler
+# X: Txn data frame
+ewmcov = function(alpha, X) {
+  X = as.matrix(X);
+  T = dim(X)[1];
+  n = dim(X)[2];
+  m = list();
+  x_1 = matrix(X[1,], n);
+  m[[1]] = x_1;
+  S = list();
+  S_1 = matrix(rep(0, n*n), n, n);
+  S[[1]] = S_1;
+  for (t in 2:T) {
+    x_t = matrix(X[t,], n);
+    m_t = (1-alpha) * x_t + alpha * m[[t-1]];
+    m[[t]] = m_t;
+    x_t_centered = x_t - m_t;
+    single_cov = (x_t_centered %*% t(x_t_centered));
+    S[[t]] = (1-alpha) * single_cov + alpha * S[[t-1]];
+  }
+  return(list(means = m, covs = S));
+}
 
+sorted_eig = function(A) {
+  cov_init = cov(A);
+  eigens_init = eigen(cov_init);
+  ev_init = eigens_init$vectors;
+  ev_vals = eigens_init$values;
+  indices_orders = order(ev_vals, decreasing = TRUE);
+  W = ev_init[, indices_orders];
+  return(W);
+}
+
+ewmpca = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
+  X = as.matrix(X);
+  T = dim(X)[1];
+  n = dim(X)[2];
+  m = list();
+  x_1 = matrix(X[1,], n);
+  m[[1]] = x_1;
+  S = list();
+  S_1 = matrix(rep(0, n*n), n, n);
+  S[[1]] = S_1;
+  Z = matrix(, T, n);
+  Z[1,] = rep(0, n);
+  W = W_initial;
+  for (t in 2:T) {
+    x_t = matrix(X[t,], n);
+    m_t = (1-alpha) * x_t + alpha * m[[t-1]];
+    m[[t]] = m_t;
+    x_t_centered = x_t - m_t;
+    single_cov = (x_t_centered %*% t(x_t_centered));
+    S[[t]] = (1-alpha) * single_cov + alpha * S[[t-1]];
+    W = ogita_aishima(S[[t]], W, max_iter_count, tol, sort_by_eigenvalues = TRUE);
+    Z[t,] = t(x_t_centered) %*% W;
+  }
+  return(Z); # EWM PCAs
+}
 

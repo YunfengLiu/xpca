@@ -1,5 +1,6 @@
 import numpy as np
 import sklearn.decomposition
+import pandas as pd
 
 
 def estimate_eigenvalues(A, X_hat, return_extra=False):
@@ -92,6 +93,8 @@ def sorted_eig(A):
     eigenvalues, eigenvectors = np.linalg.eig(A)
     sorted_indices = np.argsort(eigenvalues)[::-1]
     eigenvalues = eigenvalues[sorted_indices]
+    print("eign values: ")
+    print(np.sort(eigenvalues))
     eigenvectors = eigenvectors[:, sorted_indices]
     return eigenvalues, eigenvectors
 
@@ -110,7 +113,7 @@ class IPCA(object):
         else:
             X_raw = X.values if hasattr(X, 'values') else X
             Q = np.cov(X_raw, rowvar=False)
-            print(np.shape(Q));
+            print(np.shape(Q))
             self.components_ = ogita_aishima(
                 A=Q,
                 X_hat=self.components_.T,

@@ -96,6 +96,8 @@ def sorted_eig(A):
     print("eign values: ")
     print(np.sort(eigenvalues))
     eigenvectors = eigenvectors[:, sorted_indices]
+    print("eign vectors: ")
+    print(pd.DataFrame(data=eigenvectors))
     return eigenvalues, eigenvectors
 
 

@@ -100,13 +100,17 @@ ewmcov = function(alpha, X) {
   return(list(means = m, covs = S));
 }
 
-sorted_eig = function(A) {
-  cov_init = cov(A);
+sorted_eig = function(cov_init) {
+  # cov_init = cov(A);
   eigens_init = eigen(cov_init);
   ev_init = eigens_init$vectors;
   ev_vals = eigens_init$values;
+  print("eigen values:");
+  print(sort(ev_vals));
   indices_orders = order(ev_vals, decreasing = TRUE);
   W = ev_init[, indices_orders];
+  print("eigen vectors:");
+  print(W);
   return(W);
 }
 
@@ -134,5 +138,13 @@ ewmpca = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
     Z[t,] = t(x_t_centered) %*% W;
   }
   return(Z); # EWM PCAs
+}
+
+cov_to_cor = function(cov) {
+  v = sqrt(diag(as.matrix(cov)));
+  v = matrix(v, ncol = 1);
+  outer_v = v %*% t(v);
+  corr = cov / outer_v;
+  return(corr);
 }
 

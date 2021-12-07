@@ -102,6 +102,7 @@ ewmcov = function(alpha, X) {
   return(list(means = m, covs = S));
 }
 
+
 sorted_eig = function(cov_init) {
   # cov_init = cov(A);
   eigens_init = eigen(cov_init);
@@ -116,7 +117,7 @@ sorted_eig = function(cov_init) {
   return(W);
 }
 
-ewmpca = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
+ewmpca = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA, return_extra=FALSE) {
   X = as.matrix(X);
   T = dim(X)[1];
   n = dim(X)[2];
@@ -138,7 +139,12 @@ ewmpca = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
     W = ogita_aishima(S[[t]], W, max_iter_count, tol, sort_by_eigenvalues = TRUE);
     Z[t,] = t(x_t_centered) %*% W;
   }
-  return(Z); # EWM PCAs
+  if (return_extra) {
+    return(list(pca=Z, W=W));
+  } else {
+    return(Z); # EWM PCAs
+  }
+  
 }
 
 ewmpca2 = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
@@ -164,6 +170,39 @@ ewmpca2 = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA) {
     Z[t,] = t(x_t_centered) %*% W;
   }
   return(list(pca=Z, W=W)); # EWM PCAs
+}
+
+
+
+ewmpca3 = function(X, alpha, W_initial, tol = 1e-6, max_iter_count=NA, beta = 0.9) {
+  X = as.matrix(X);
+  T = dim(X)[1];
+  n = dim(X)[2];
+  m = list();
+  x_1 = matrix(X[1,], n);
+  m[[1]] = x_1;
+  S = list();
+  S_1 = matrix(rep(0, n*n), n, n);
+  S[[1]] = S_1;
+  B = list();
+  B[[1]] = S_1;
+  tt = list();
+  tt[[1]] = X[2,] - X[1,];
+  Z = matrix(, T, n);
+  Z[1,] = rep(0, n);
+  W = W_initial;
+  for (t in 2:T) {
+    x_t = matrix(X[t,], n);
+    m[[t]] = alpha * x_t + (1 - alpha) * (m[[t-1]] + tt[[t-1]]);
+    tt[[t]] = beta*(m[[t]] - m[[t-1]]) + (1-beta)*tt[[t-1]];
+    x_t_centered = x_t - m[[t]];
+    single_cov = (x_t_centered %*% t(x_t_centered));
+    S[[t]] = (alpha) * single_cov + (1 - alpha) * (S[[t-1]] + B[[t-1]]);
+    B[[t]] = beta*(S[[t]] - S[[t-1]]) + (1 - beta)*B[[t-1]];
+    W = ogita_aishima(S[[t]], W, max_iter_count, tol, sort_by_eigenvalues = TRUE);
+    Z[t,] = t(x_t_centered) %*% W;
+  }
+  return(Z); # EWM PCAs
 }
 
 cov_to_cor = function(cov) {
